@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Event | EduSchedule</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="auth-card" style="max-width: 480px;">
+            <div class="auth-logo">
+                <i class="ti ti-calendar-event"></i>
+                <div>
+                    EduSchedule
+                    <span class="auth-sub">Mekelle University</span>
+                </div>
+            </div>
+            <h2>Edit Event</h2>
+            <p class="auth-desc">Update your event details</p>
+            <form id="editForm">
+                <div class="form-group">
+                    <label class="form-label">Event title</label>
+                    <input type="text" id="editTitle" placeholder="e.g., Software Architecture Workshop" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" id="editDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Time</label>
+                        <input type="time" id="editTime" required>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" id="cancelEditBtn" class="btn">Cancel</button>
+                </div>
+                <div id="message" class="auth-error" style="margin-top: 16px;"></div>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

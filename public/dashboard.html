@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSchedule — Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="ti ti-calendar-event"></i>
+                <div>
+                    E-Schedule
+                    <span class="logo-sub">Personal Event Scheduler</span>
+                </div>
+            </div>
+        </div>
+        <div class="nav">
+            <button class="nav-item active" data-page="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+            <button class="nav-item" data-page="calendar"><i class="ti ti-calendar"></i> Calendar</button>
+            <button class="nav-item" data-page="create"><i class="ti ti-plus"></i> Create event</button>
+            <div class="nav-section">Admin</div>
+            <button class="nav-item" data-page="backup"><i class="ti ti-database-export"></i> Backup</button>
+            <button class="nav-item" data-page="monitor"><i class="ti ti-activity"></i> Monitoring</button>
+        </div>
+        <div class="user-footer">
+            <div style="display:flex;align-items:center;gap:8px">
+                <div class="avatar" id="userAvatar">JD</div>
+                <div>
+                    <div id="userName" style="font-size:12px;font-weight:500;color:#111">Loading...</div>
+                    <div style="font-size:11px;color:#aaa">Student</div>
+                </div>
+            </div>
+            <button id="logoutBtn" class="logout-side-btn"><i class="ti ti-logout"></i> Logout</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-title" id="page-title">Dashboard</div>
+            <span class="badge badge-success"><i class="ti ti-wifi"></i> System online</span>
+            <button id="backupBtn" class="btn" style="background:#10b981; color:white;"><i class="ti ti-database-export"></i> Backup</button>
+            <button id="testToastBtn" class="btn" style="background:#f59e0b; color:white;"><i class="ti ti-bell"></i> Test Toast</button>
+        </div>
+
+        <!-- DEBUG DIV (will show why notification is not working) -->
+        <div id="notificationDebug" style="background:#fef3c7; padding:8px 16px; margin:8px 20px 0; border-radius:8px; font-size:12px; display:none; border:1px solid #f59e0b;"></div>
+
+        <div class="content">
+            <!-- DASHBOARD PAGE -->
+            <div id="page-dashboard" class="page active">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-label">Total events</div><div id="totalEvents" class="stat-val">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Upcoming (7d)</div><div id="upcomingEvents" class="stat-val">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Events this month</div><div id="monthEvents" class="stat-val">0</div></div>
+                </div>
+                <div class="section-title">Upcoming events</div>
+                <div id="eventList" class="events-list"></div>
+            </div>
+
+            <!-- CALENDAR PAGE -->
+            <div id="page-calendar" class="page">
+                <div class="calendar-nav">
+                    <button id="prevMonthBtn" class="btn"><i class="ti ti-chevron-left"></i></button>
+                    <span id="monthYearDisplay" class="month-year"></span>
+                    <button id="nextMonthBtn" class="btn"><i class="ti ti-chevron-right"></i></button>
+                </div>
+                <div id="calendarGrid"></div>
+            </div>
+
+            <!-- CREATE EVENT PAGE -->
+            <div id="page-create" class="page">
+                <div style="max-width:560px">
+                    <div id="conflict-banner" class="conflict-banner" style="display:none">
+                        <i class="ti ti-alert-triangle"></i> Conflict: Another event already exists at this date and time.
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Event title</label>
+                        <input type="text" id="evTitle" placeholder="e.g., Software Design Workshop">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" id="evDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time</label>
+                            <input type="time" id="evTime">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveEventBtn" class="btn btn-primary">Save event</button>
+                        <button id="cancelCreateBtn" class="btn">Cancel</button>
+                    </div>
+                    <div id="save-msg" style="display:none; margin-top:12px; color:#10b981;"><i class="ti ti-circle-check"></i> Event saved!</div>
+                </div>
+            </div>
+
+            <!-- BACKUP PAGE -->
+            <div id="page-backup" class="page">
+                <div class="section-title">Database backup</div>
+                <div style="padding:14px; border:1px solid #e8e8e8; border-radius:8px">
+                    <p>Export your events and user data as CSV files. The backup will be saved on the server.</p>
+                    <button id="backupPageBtn" class="btn btn-primary" style="margin-top:12px;"><i class="ti ti-database-export"></i> Run backup now</button>
+                    <div id="backupMsg" style="margin-top:10px; font-size:13px;"></div>
+                </div>
+
+                <!-- NEW: Restore section -->
+                <div style="margin-top: 24px; padding:14px; border:1px solid #e8e8e8; border-radius:8px">
+                    <div class="section-title" style="margin-bottom:12px">Restore from backup</div>
+                    <div class="form-group">
+                        <label class="form-label">Users CSV file</label>
+                        <input type="file" id="restoreUsersFile" accept=".csv">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Events CSV file</label>
+                        <input type="file" id="restoreEventsFile" accept=".csv">
+                    </div>
+                    <button id="restoreBtn" class="btn btn-primary"><i class="ti ti-database-import"></i> Restore data</button>
+                    <div id="restoreMsg" style="margin-top:10px; font-size:13px;"></div>
+                    <p style="margin-top:12px; font-size:12px; color:#888;">⚠️ Restoring will overwrite all existing data. Use with caution.</p>
+                </div>
+            </div>
+
+            <!-- MONITORING PAGE -->
+            <div id="page-monitor" class="page">
+                <div class="monitor-grid">
+                    <div class="monitor-card"><div class="monitor-title"><span class="status-dot"></span> API response time</div><div id="apiTime" class="monitor-val">--</div><div class="progress-bar"><div id="apiFill" class="progress-fill" style="width:0%"></div></div></div>
+                    <div class="monitor-card"><div class="monitor-title"><span class="status-dot"></span> Page load time</div><div id="pageLoad" class="monitor-val">--</div><div class="progress-bar"><div id="loadFill" class="progress-fill" style="width:0%"></div></div></div>
+                    <div class="monitor-card"><div class="monitor-title"><span class="status-dot"></span> Active sessions</div><div id="activeSessions" class="monitor-val">--</div></div>
+                    <div class="monitor-card"><div class="monitor-title"><span class="status-dot"></span> System uptime</div><div id="uptime" class="monitor-val">--</div></div>
+                </div>
+                <div class="section-title">System log</div>
+                <div id="logContainer" class="log-box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- NOTIFICATION TOAST (outside .app) -->
+<div id="notificationToast" class="notification-toast"></div>
+<script src="script.js"></script>
+</body>
+</html>
