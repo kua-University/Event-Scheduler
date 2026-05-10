@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const pool = require('./db');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const backupRoutes = require('./routes/backup');
@@ -11,36 +12,55 @@ const { log } = require('./utils/logger');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---------- Metrics storage ----------
-let requestTimes = []; // store last 10 response times (ms)
-const activeUsers = new Set(); // user IDs that have made a request in last 60 minutes
-const USER_ACTIVE_TIMEOUT = 60 * 60 * 1000; // 1 hour
+// ---------- Create tables automatically (if they don't exist) ----------
+const createTables = async () => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS events (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(200) NOT NULL,
+                event_date DATE NOT NULL,
+                event_time TIME NOT NULL,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+            );
+        `);
+        console.log('✅ Tables verified/created successfully.');
+    } catch (err) {
+        console.error('❌ Error creating tables:', err.message);
+    }
+};
+createTables();
 
-// Middleware to track API response time and active sessions
+// ---------- Middleware to track API response time and active sessions ----------
+let requestTimes = [];
+const activeUsers = new Set();
+const USER_ACTIVE_TIMEOUT = 60 * 60 * 1000;
+
 app.use((req, res, next) => {
     const start = Date.now();
-    // Capture original end function
     const originalEnd = res.end;
     res.end = function(...args) {
         const duration = Date.now() - start;
-        // Only track API routes (not static files)
         if (req.path.startsWith('/api/')) {
             requestTimes.push(duration);
-            if (requestTimes.length > 20) requestTimes.shift(); // keep last 20
+            if (requestTimes.length > 20) requestTimes.shift();
         }
-        // Track active user (if token present)
-        const token = req.headers.authorization?.split(' ')[1];
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
         if (token) {
             try {
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const userId = decoded.id;
                 activeUsers.add(userId);
-                // Schedule removal after 1 hour (simplified: we'll just clear old entries later)
-                setTimeout(() => {
-                    activeUsers.delete(userId);
-                }, USER_ACTIVE_TIMEOUT);
-            } catch(e) { /* ignore invalid tokens */ }
+                setTimeout(() => activeUsers.delete(userId), USER_ACTIVE_TIMEOUT);
+            } catch(e) {}
         }
         originalEnd.apply(res, args);
     };
@@ -61,7 +81,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/backup', backupRoutes);
 
-// Logs endpoint (already there)
+// Logs endpoint
 app.get('/api/logs', (req, res) => {
     const logFile = path.join(__dirname, 'logs', 'app.log');
     if (!fs.existsSync(logFile)) {
@@ -78,21 +98,18 @@ app.get('/api/logs', (req, res) => {
     }
 });
 
-// Stats endpoint for monitoring page
+// Stats endpoint
 app.get('/api/stats', (req, res) => {
     const uptimeSeconds = process.uptime();
     const hours = Math.floor(uptimeSeconds / 3600);
     const minutes = Math.floor((uptimeSeconds % 3600) / 60);
     const seconds = Math.floor(uptimeSeconds % 60);
     const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
-
-    const avgApiTime = requestTimes.length ? requestTimes.reduce((a,b)=>a+b,0) / requestTimes.length : 0;
-
+    const avgApiTime = requestTimes.length ? requestTimes.reduce((a,b) => a+b,0) / requestTimes.length : 0;
     res.json({
         uptime: uptimeStr,
         activeSessions: activeUsers.size,
-        avgApiTime: Math.round(avgApiTime),
-        // Page load time is measured client-side; we'll return server uptime as extra
+        avgApiTime: Math.round(avgApiTime)
     });
 });
 
